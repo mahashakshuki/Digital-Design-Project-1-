@@ -1,0 +1,18 @@
+Circuit 5
+
+
+INPUTS:
+A
+B
+C
+D
+COMPONENTS:
+G0, OR2, w7, A
+G1, AND2, w1, B, C
+G2, NAND2, w2, D , C
+G3, AND2, w3, w0, w1
+G4, NOR2, w4, w2, w1
+G5, NOT, w5, D
+G6, OR2, w6, w3, w4
+G7, AND2, X, w5, w6
+G8, NOT, w7, B
