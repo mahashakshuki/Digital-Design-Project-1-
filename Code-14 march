@@ -1,0 +1,180 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <chrono>
+#include <thread>
+
+using namespace std;
+
+// Structure to store gate information
+struct Gate {
+    string name;
+    string type;
+    string output_expression;
+    int delay; // in milliseconds
+};
+
+// Structure to represent the circuit
+struct Circuit {
+    vector<Gate> gates;
+};
+
+// Function to parse the library file and populate gate information
+Circuit parseLibrary(const string& libraryFile) {
+    Circuit circuit;
+
+    ifstream file(libraryFile);
+    if (!file.is_open()) {
+        cerr << "Error: Unable to open library file '" << libraryFile << "'." << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    string line;
+    int gateIndex = 1; // Track gate index for error reporting
+    while (getline(file, line)) {
+        stringstream ss(line);
+        Gate gate;
+        ss >> gate.name >> gate.type >> gate.output_expression >> gate.delay;
+        if (ss.fail()) {
+            cerr << "Error parsing library file at gate " << gateIndex << endl;
+            exit(EXIT_FAILURE);
+        }
+        circuit.gates.push_back(gate);
+        gateIndex++;
+    }
+
+    file.close();
+    return circuit;
+}
+
+// Function to parse the circuit file and populate gate connections
+vector<pair<string, vector<string>>> parseCircuit(const string& circuitFile) {
+    vector<pair<string, vector<string>>> connections;
+
+    ifstream file(circuitFile);
+    if (!file.is_open()) {
+        cerr << "Error: Unable to open circuit file '" << circuitFile << "'." << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string type, name, output;
+        ss >> name >> type >> output;
+        if (type == "INPUTS:") {
+            continue; // Skip input section
+        }
+        else if (type == "COMPONENTS:") {
+            vector<string> inputs;
+            string input;
+            while (ss >> input) {
+                inputs.push_back(input);
+            }
+            connections.push_back(make_pair(output, inputs));
+        }
+    }
+
+    file.close();
+    return connections;
+}
+
+// Function to parse the stimuli file and extract input values and time points
+vector<tuple<int, string, int>> parseStimuli(const string& stimuliFile) {
+    vector<tuple<int, string, int>> stimuli;
+
+    ifstream file(stimuliFile);
+    if (!file.is_open()) {
+        cerr << "Error: Unable to open stimuli file '" << stimuliFile << "'." << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        int time, value;
+        string inputName;
+        char comma;
+        ss >> time >> comma >> inputName >> comma >> value;
+        stimuli.push_back(make_tuple(time, inputName, value));
+    }
+
+    file.close();
+    return stimuli;
+}
+
+// Function to evaluate the output of a gate based on input values
+int evaluateGateOutput(const string& outputExpression, const vector<pair<string, int>>& inputValues) {
+    // Evaluate output expression using input values
+    int result = 0;
+    for (const auto& input : inputValues) {
+        if (outputExpression.find(input.first) != string::npos) {
+            result |= input.second;
+        }
+    }
+    return result;
+}
+
+// Function to simulate gate operations with time delay
+void simulateCircuit(const Circuit& circuit, const vector<pair<string, vector<string>>>& connections, const vector<tuple<int, string, int>>& stimuli) {
+    // Track input values at each time step
+    vector<pair<string, int>> inputValues;
+
+    // Simulate gate operations
+    for (const auto& stimulus : stimuli) {
+        int time = get<0>(stimulus);
+        string inputName = get<1>(stimulus);
+        int value = get<2>(stimulus);
+
+        // Update input value
+        bool found = false;
+        for (auto& input : inputValues) {
+            if (input.first == inputName) {
+                input.second = value;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            inputValues.push_back(make_pair(inputName, value));
+        }
+
+        // Print time and input values
+        cout << "Time: " << time << "ms | ";
+        for (const auto& input : inputValues) {
+            cout << input.first << ": " << input.second << " | ";
+        }
+        cout << endl;
+
+        // Simulate gate operations
+        for (const auto& connection : connections) {
+            const string& output = connection.first;
+            const vector<string>& inputs = connection.second;
+            const Gate& gate = circuit.gates[stoi(output.substr(1)) - 1]; // Gate index starts from 1
+            int result = evaluateGateOutput(gate.output_expression, inputValues);
+            cout << "Output of Gate " << gate.name << ": " << result << endl;
+            this_thread::sleep_for(chrono::milliseconds(500)); // Output every 500 ms
+        }
+    }
+}
+
+int main() {
+    string libraryFile = "library.lib";
+    string circuitFile = "circuit.cir";
+    string stimuliFile = "stimuli.stim";
+
+    // Parse library file to get gate information
+    Circuit circuit = parseLibrary(libraryFile);
+
+    // Parse circuit file to get gate connections
+    vector<pair<string, vector<string>>> connections = parseCircuit(circuitFile);
+
+    // Parse stimuli file to get input values and time points
+    vector<tuple<int, string, int>> stimuli = parseStimuli(stimuliFile);
+
+    // Simulate circuit operations with time delay based on stimuli
+    simulateCircuit(circuit, connections, stimuli);
+
+    return 0;
+}
