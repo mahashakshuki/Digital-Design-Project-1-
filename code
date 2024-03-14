@@ -2,19 +2,27 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <unordered_map>
-#include <queue>
 
 using namespace std;
 
+// Define a struct for circuit components
 struct Component {
-    string type;
-    vector<string> inputs;
-    int delay;
+    string name;
+    int num_inputs;
+    string output_expression;
+    int delay_ps;
+};
+
+// Define a struct for stimuli
+struct Stimulus {
+    int time_stamp_ps;
+    string input;
+    int logic_value;
 };
 
 // Function to parse the library file
-void parseLibraryFile(const string& filename) {
+vector<Component> parseLibraryFile(const string& filename) {
+    vector<Component> components;
     ifstream file(filename);
     if (!file.is_open()) {
         cerr << "Error: Unable to open library file " << filename << endl;
@@ -24,18 +32,20 @@ void parseLibraryFile(const string& filename) {
     string line;
     while (getline(file, line)) {
         stringstream ss(line);
-        string name, type, expression;
-        int num_inputs, delay;
+        Component comp;
         char comma;
-        ss >> name >> comma >> num_inputs >> comma >> expression >> comma >> delay;
-        circuit[name] = {type, vector<string>(num_inputs), delay};--
+        ss >> comp.name >> comma >> comp.num_inputs >> comma >> comp.output_expression >> comma >> comp.delay_ps;
+        components.push_back(comp);
     }
 
     file.close();
+    return components;
 }
 
 // Function to parse the circuit file
-void parseCircuitFile(const string& filename) {
+pair<vector<string>, vector<Component>> parseCircuitFile(const string& filename) {
+    vector<string> inputs;
+    vector<Component> circuit;
     ifstream file(filename);
     if (!file.is_open()) {
         cerr << "Error: Unable to open circuit file " << filename << endl;
@@ -49,17 +59,22 @@ void parseCircuitFile(const string& filename) {
         ss >> name >> type >> output;
         if (type == "INPUTS:") {
             while (ss >> name) {
-                inputs[name] = 0; // Initialize inputs to logic 0
+                inputs.push_back(name);
             }
         } else if (type == "COMPONENTS:") {
-            circuit[output].type = name;
+            Component comp;
+            comp.name = name;
+            comp.output_expression = output;
             while (ss >> name) {
-                circuit[output].inputs.push_back(name);
+                comp.num_inputs++;
+                comp.num_inputs;
             }
+            circuit.push_back(comp);
         }
     }
 
     file.close();
+    return make_pair(inputs, circuit);
 }
 
 // Function to parse the stimuli file
@@ -76,17 +91,10 @@ vector<Stimulus> parseStimuliFile(const string& filename) {
         stringstream ss(line);
         Stimulus stimulus;
         char comma;
-        ss >> stimulus.time >> comma >> stimulus.input >> stimulus.value;
+        ss >> stimulus.time_stamp_ps >> comma >> stimulus.input >> comma >> stimulus.logic_value;
         stimuli.push_back(stimulus);
     }
 
     file.close();
     return stimuli;
-}
-
-int main:
-{
-
-
-
 }
