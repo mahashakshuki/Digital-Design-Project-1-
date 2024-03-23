@@ -270,6 +270,92 @@ int main() {
     for (const auto& gate : gates) {
         delete gate.gatePtr;
     }
+int main() {
+    string libraryFile = "library.lib";
+    string circuitFile = "circuit.cir";
+    string stimuliFile = "stimuli.stim";
+    string outputFile = "simulation.sim"; // Output file name
+
+    // Open the output file for writing
+    ofstream outputFileStream(outputFile);
+    if (!outputFileStream.is_open()) {
+        cerr << "Error: Unable to open output file '" << outputFile << "'." << endl;
+        return EXIT_FAILURE;
+    }
+
+    // Parse the library file to create gate objects
+    vector<Gate> gates = parseLibrary(libraryFile);
+
+    // Parse the circuit file and determine gate connections
+    vector<tuple<string, vector<string>>> connections = parseCircuit(circuitFile);
+
+    // Parse the stimuli file and store stimuli data
+    vector<tuple<int, string, int>> stimuli = parseStimuli(stimuliFile);
+
+    // Define the current time stamp
+    int current_time = 0;
+
+    // Redirect output stream to the output file
+    streambuf *coutbuf = cout.rdbuf();
+    cout.rdbuf(outputFileStream.rdbuf());
+
+    // Evaluate gate outputs for initial time step
+    cout << "Time: 0 ns" << endl;
+    for (const auto& gate : gates) {
+        // Manually evaluate gate's output
+        int output = gate.gatePtr->evaluate();
+        cout << gate.getName() << " Output: " << output << endl;
+    }
+    cout << endl;
+
+    // Iterate over stimuli and simulate the circuit behavior
+    for (const auto& stimulus : stimuli) {
+        int time_stamp = get<0>(stimulus);
+        string input = get<1>(stimulus);
+        int logic_value = get<2>(stimulus);
+
+        // Process time steps until reaching the current time stamp
+        while (current_time < time_stamp) {
+            // Increment the current time by 200 ns
+            current_time += 200;
+
+            // Evaluate gate outputs for the current time step
+            cout << "Time: " << current_time << " ns" << endl;
+            for (const auto& gate : gates) {
+                // Manually evaluate gate's output
+                int output = gate.gatePtr->evaluate();
+                cout << gate.getName() << " Output: " << output << endl;
+            }
+            cout << endl;
+        }
+
+        // Update gate inputs according to the stimuli
+        for (const auto& gate : gates) {
+            for (const auto& connection : connections) {
+                if (gate.getName() == get<0>(connection)) {
+                    vector<string> inputs = get<1>(connection);
+                    for (size_t i = 0; i < inputs.size(); ++i) {
+                        if (inputs[i] == input) {
+                            gate.gatePtr->setInput(i, logic_value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Release memory allocated for gate objects
+    for (const auto& gate : gates) {
+        delete gate.gatePtr;
+    }
+
+    // Close the output file
+    outputFileStream.close();
+
+    // Restore the original cout buffer
+    cout.rdbuf(coutbuf);
 
     return 0;
 }
+
+  
