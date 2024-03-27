@@ -5,6 +5,7 @@ INPUTS:
 A
 B
 C
+D
 COMPONENTS:
 G0, NOT, w0, A
 G1, OR2, w1, B, C
