@@ -1,0 +1,15 @@
+Circuit 3
+
+
+INPUTS:
+A
+B
+C
+COMPONENTS:
+G0, NOT, w0, A
+G1, OR2, w1, B, C
+G2, NOT, w2, D
+G3, AND2, w3, A, w1
+G4, NAND2, w4, w2, w1
+G5, OR2, w5, w0, w3
+G6, NOR2, X, w5, w4
