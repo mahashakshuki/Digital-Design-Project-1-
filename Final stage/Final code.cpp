@@ -7,8 +7,6 @@
 #include <unordered_map> 
 #include <algorithm>
 using namespace std;
-// C++ program for the above approach 
-
 
 // Base class for gates with multiple inputs
 class MultiInputGate {
@@ -38,25 +36,23 @@ struct Gate {
     string name;
     int delay;
     MultiInputGate* gatePtr;
+
     // Constructor
-    Gate(const string& n, const int& delay, MultiInputGate* gateptr) : name(n), delay(delay), gatePtr(gateptr) {}
+    Gate(const string& n, const int& d, MultiInputGate* gateptr) : name(n), delay(d), gatePtr(gateptr) {}
 
     // Method to get gate's name
     string getName() const {
         return name;
     }
 
-    // Method to get gate's name
+    // Method to get gate's delay
     int getDelay() const {
         return delay;
     }
-    // Virtual destructor
-
 };
 
 // NOT gate class
 class NOTGate : public MultiInputGate {
-
 public:
     // Constructor to initialize input
     NOTGate() : MultiInputGate(1) {}
@@ -85,6 +81,7 @@ public:
         if (inputs.empty()) {
             return 0;
         }
+
         // Iterate through inputs and return 0 if any input is 0, otherwise return 1
         for (int input : inputs) {
             if (input == 0) {
@@ -108,6 +105,7 @@ public:
             return 0;
         }
 
+        // Iterate through inputs and return 1 if any input is 1, otherwise return 0
         for (int input : inputs) {
             if (input == 1) {
                 return 1;
@@ -116,7 +114,7 @@ public:
         return 0;
     }
 };
-//
+
 // XOR gate class
 class XORGate : public MultiInputGate {
 public:
@@ -130,9 +128,13 @@ public:
             return 0;
         }
 
+        // Count the number of 1s in the inputs
         int countOnes = 0;
-        for (int input : inputs)
+        for (int input : inputs) {
             countOnes += input;
+        }
+
+        // Return 1 if the count of 1s is odd, otherwise return 0
         return countOnes % 2 == 1 ? 1 : 0;
     }
 };
@@ -143,13 +145,14 @@ public:
     // Constructor to initialize inputs vector with specified size
     NANDGate(size_t numInputs) : MultiInputGate(numInputs) {}
 
-    // Function to evaluate XOR gate's output
+    // Function to evaluate NAND gate's output
     int evaluate() const override {
         // If there are no inputs, return 0
         if (inputs.empty()) {
             return 0;
         }
 
+        // Iterate through inputs and return 1 if any input is 0, otherwise return 0
         for (int input : inputs) {
             if (input == 0) {
                 return 1;
@@ -165,13 +168,14 @@ public:
     // Constructor to initialize inputs vector with specified size
     NORGate(size_t numInputs) : MultiInputGate(numInputs) {}
 
-    // Function to evaluate OR gate's output
+    // Function to evaluate NOR gate's output
     int evaluate() const override {
         // If there are no inputs, return 0
         if (inputs.empty()) {
             return 0;
         }
 
+        // Iterate through inputs and return 0 if any input is 1, otherwise return 1
         for (int input : inputs) {
             if (input == 1) {
                 return 0;
@@ -181,10 +185,7 @@ public:
     }
 };
 
-
-
 // Function to parse the library file and create gate objects
-// output tuple {Componenet_Name , delay, numofInputs}
 vector<tuple<string, int, int>> parseLibrary(const string& filename) {
     vector<tuple<string, int, int>> librarygates;
     ifstream file(filename);
@@ -198,24 +199,13 @@ vector<tuple<string, int, int>> parseLibrary(const string& filename) {
         string Component_Name, expression, comma;
         int delay, numInputs;
 
+        // Parse each line of the library file
         ss >> Component_Name >> numInputs >> comma >> expression >> delay;
-        Component_Name.pop_back();// removing comma
-        expression.pop_back();// removing comma
-        // cout << Component_Name << " " << numInputs << " " << expression << " " << delay << endl;
-        // Create gate objects based on gate type
-        // MultiInputGate* gatePtr = nullptr;
-        // if (Component_Name == "NOT") {
-        //     gatePtr = new NOTGate();
-        // }
-        // else if (Component_Name == "AND2") {
-        //     gatePtr = new ANDGate(numInputs);
-        // }
+        Component_Name.pop_back(); // Removing comma
+        expression.pop_back();    // Removing comma
 
-
+        // Create a tuple to store gate information and add it to the library vector
         librarygates.emplace_back(Component_Name, delay, numInputs);
-
-
-
     }
     file.close();
     return librarygates;
@@ -240,28 +230,31 @@ vector<tuple<string, string, string, vector<string>>> parseCircuit(const string 
         }
         else if (!line.empty()) {
             if (inInputs) {
+                // Parse input lines
                 stringstream ss(line);
                 string inputName;
                 ss >> inputName;
                 connections.emplace_back("", "", inputName, vector<string>());
             }
             else {
+                // Parse component lines
                 stringstream ss(line);
                 string gateName, gateType, output, input;
                 ss >> gateName >> gateType >> output;
-                gateName.pop_back();// removing comma
-                gateType.pop_back();// removing comma
-                output.pop_back();// removing comma                
-                // cout << gateName << " " << gateType << " " << output << " ";
+                gateName.pop_back(); // Removing comma
+                gateType.pop_back(); // Removing comma
+                output.pop_back();   // Removing comma
+
+                // Parse inputs for the component
                 vector<string> inputs;
                 while (ss >> input) {
-                    if (input[input.length() - 1] == ',')
-                        input.pop_back();// removing comma 
-                    // cout<< input<< " ";
+                    if (input[input.length() - 1] == ',') {
+                        input.pop_back(); // Removing comma
+                    }
                     inputs.push_back(input);
                 }
-                // cout<<endl;
 
+                // Create a tuple to store connection information and add it to the connections vector
                 connections.emplace_back(gateName, gateType, output, inputs);
             }
         }
@@ -269,7 +262,6 @@ vector<tuple<string, string, string, vector<string>>> parseCircuit(const string 
     file.close();
     return connections;
 }
-
 
 // Function to parse the stimuli file and output its content
 vector<tuple<int, string, int>> parseStimuli(const string& stimuliFile) {
@@ -284,16 +276,17 @@ vector<tuple<int, string, int>> parseStimuli(const string& stimuliFile) {
     while (getline(file, line)) {
         stringstream ss(line);
         int time_stamp;
-        char   comma1, comma2;
+        char comma1, comma2;
         string input;
         int logic_value;
         ss >> time_stamp >> comma1 >> input >> logic_value;
-        input.pop_back();
-        // cout << time_stamp << " " << input << " " << logic_value<<endl;
+        input.pop_back(); // Removing comma
+
         if (ss.fail() || comma1 != ',') {
             cerr << "Error parsing stimuli file: " << line << endl;
         }
         else {
+            // Create a tuple to store stimuli information and add it to the stimuli vector
             stimuli.emplace_back(time_stamp, input, logic_value);
         }
     }
@@ -302,67 +295,60 @@ vector<tuple<int, string, int>> parseStimuli(const string& stimuliFile) {
     return stimuli;
 }
 
+// Function to sort tuples by timestamp in ascending order
 bool sortascen(const tuple<int, string, int>& a,
-    const tuple<int, string, int>& b)
-{
+               const tuple<int, string, int>& b) {
     return (get<0>(a) < get<0>(b));
 }
 
-
 int main() {
+    // Define file names for input and output
     string libraryFile = "library.lib";
     string circuitFile = "circuit.cir";
     string stimuliFile = "stimuli.stim";
     string outputFile = "simulation.sim"; // Output file name
 
-    // Open the output file for writing
-    // ofstream outputFileStream(outputFile);
-    // if (!outputFileStream.is_open()) {
-    //     cerr << "Error: Unable to open output file '" << outputFile << "'." << endl;
-    //     return EXIT_FAILURE;
-    // }
-
     // Parse the library file to create gate objects
-    vector<tuple<string, int, int>>  Library_Gates = parseLibrary(libraryFile);
+    vector<tuple<string, int, int>> Library_Gates = parseLibrary(libraryFile);
+
     // Parse the circuit file and determine gate connections
-
-
     vector<tuple<string, string, string, vector<string>>> connections = parseCircuit(circuitFile);
 
+    // Initialize variables to store gate information, gate objects, and input values
     vector<Gate> GatesUsed;
     MultiInputGate* gatePtr = nullptr;
     unordered_map<string, int> inputs_values;
-    for (int j = 0; j < connections.size(); j++)
-    {
-        if (!(get<0>(connections[j]).empty()))
-        {
 
-            for (int k = 0; k < get<3>(connections[j]).size(); k++)
+    // Iterate through connections to create gate objects and store inputs
+    for (int j = 0; j < connections.size(); j++) {
+        if (!(get<0>(connections[j]).empty())) {
+            // Store input names and initialize their values to 0
+            for (int k = 0; k < get<3>(connections[j]).size(); k++) {
                 inputs_values[get<3>(connections[j])[k]] = 0;
+            }
             inputs_values[get<2>(connections[j])] = 0;
-            for (int i = 0; i < Library_Gates.size(); i++)
-                if (get<0>(Library_Gates[i]) == get<1>(connections[j]))
-                {
+
+            // Find corresponding gate type in the library and create gate object
+            for (int i = 0; i < Library_Gates.size(); i++) {
+                if (get<0>(Library_Gates[i]) == get<1>(connections[j])) {
                     gatePtr = nullptr;
                     int index_numOfInputs;
                     string GateType;
-
                     int numOfInputs;
-                    if (get<0>(Library_Gates[i]) == "NOT")
-                    {
+
+                    // Determine gate type and number of inputs
+                    if (get<0>(Library_Gates[i]) == "NOT") {
                         numOfInputs = 1;
                         GateType = "NOT";
                     }
-                    else
-                    {
+                    else {
                         index_numOfInputs = get<0>(Library_Gates[i]).find_last_not_of("0123456789");
                         GateType = get<0>(Library_Gates[i]).substr(0, index_numOfInputs + 1);
-
                         numOfInputs = stoi(get<0>(Library_Gates[i]).substr(index_numOfInputs + 1));
                     }
 
-                    if (get<2>(Library_Gates[i]) == numOfInputs)
-                    {
+                    // Create gate object based on gate type and number of inputs
+                    if (get<2>(Library_Gates[i]) == numOfInputs) {
                         if (GateType == "NOT") {
                             gatePtr = new NOTGate();
                         }
@@ -375,117 +361,77 @@ int main() {
                         else if (GateType == "XOR") {
                             gatePtr = new XORGate(numOfInputs);
                         }
-
                         else if (GateType == "NAND") {
                             gatePtr = new NANDGate(numOfInputs);
                         }
-
                         else if (GateType == "NOR") {
                             gatePtr = new NORGate(numOfInputs);
                         }
                     }
-                    else
-                    {
+                    else {
                         cout << "Invalid Number of Inputs for " << get<0>(Library_Gates[i]) << " " << get<2>(Library_Gates[i]) << endl;
                         exit(0);
                     }
 
-                    // cout<< get<1>(Library_Gates[i])<< " " << get<0>(Library_Gates[i]) << " " << gatePtr <<endl;
+                    // Store gate information and gate object
                     GatesUsed.emplace_back(get<1>(connections[j]), get<1>(Library_Gates[i]), gatePtr);
                     break;
                 }
-
+            }
         }
-
     }
 
-
     // Define the current time stamp
-
     int current_time = 0;
-    // Evaluate gate outputs for initial time step
+
+    // Evaluate gate outputs for initial time step and store output changes
     ofstream ofs;
     ofs.open(outputFile.c_str(), ofstream::out);
     vector<tuple<int, string, int>> ALLtimings;
     int count = 0;
 
-    // do
-    // {
-    //     if(!ALLtimings.empty())
-    //     {
-    //         current_time = get<0>(ALLtimings[count]);
-    //         count++;
-    //     }
-
-
-    for (int i = 0; i < GatesUsed.size(); i++)
-    {
+    for (int i = 0; i < GatesUsed.size(); i++) {
         int index = i + connections.size() - GatesUsed.size();
         int Evaluation = GatesUsed[i].gatePtr->evaluate();
-        // cout<< index << " " <<Evaluation << " " << get<2>(connections[index]) << " " << GatesUsed[i].getName()<<endl;
-        if (Evaluation != inputs_values[get<2>(connections[index])])
-        {
-           /* ofs << current_time + GatesUsed[i].getDelay() << ',' << " " << get<2>(connections[index]) << ',' << " " << Evaluation << endl;*/
+        if (Evaluation != inputs_values[get<2>(connections[index])]) {
             ALLtimings.emplace_back(current_time + GatesUsed[i].getDelay(), get<2>(connections[index]), Evaluation);
             inputs_values[get<2>(connections[index])] = Evaluation;
-
         }
     }
-    // for (const auto& record : ALLtimings)
-    // cout << get<0>(record) << " " <<  get<1>(record) << " " <<  get<2>(record) <<endl;
-    // }while(count< ALLtimings.size());
 
-    // // Parse the stimuli file and store stimuli data
+    // Parse the stimuli file and store stimuli data
     vector<tuple<int, string, int>> stimuli = parseStimuli(stimuliFile);
-    for (const auto& stim : stimuli)
-    {
+    for (const auto& stim : stimuli) {
         if (!(inputs_values[(get<1>(stim))] == get<2>(stim)))
             ALLtimings.emplace_back(get<0>(stim), get<1>(stim), get<2>(stim));
-
     }
 
-
-    while (count < ALLtimings.size())
-    {
+    // Iterate through output changes, update gate inputs, and evaluate outputs
+    while (count < ALLtimings.size()) {
         current_time = get<0>(ALLtimings[count]);
-
-        //ofs << get<0>(ALLtimings[count]) << ',' << " " << get<1>(ALLtimings[count]) << ',' << " " << get<2>(ALLtimings[count]) << endl;
         inputs_values[get<1>(ALLtimings[count])] = get<2>(ALLtimings[count]);
-        for (int i = 0; i < GatesUsed.size(); i++)
-        {
+        for (int i = 0; i < GatesUsed.size(); i++) {
             int index = i + connections.size() - GatesUsed.size();
             for (int z = 0; z < get<3>(connections[index]).size(); z++) {
-                if ((get<3>(connections[index])[z] == get<1>(ALLtimings[count])))
-                {
+                if ((get<3>(connections[index])[z] == get<1>(ALLtimings[count]))) {
                     GatesUsed[i].gatePtr->setInput(z, get<2>(ALLtimings[count]));
-                    //cout << get<3>(connections[index])[z] << " " << GatesUsed[i].gatePtr->inputs[z] << endl;
                     int Evaluation = GatesUsed[i].gatePtr->evaluate();
-                    //cout << get<2>(connections[index]) << " " << Evaluation << endl;
-
-                    if (Evaluation != inputs_values[get<2>(connections[index])])
-                    {
-
-                       /* ofs << current_time + GatesUsed[i].getDelay() << ',' << " " << get<2>(connections[index]) << ',' << " " << Evaluation << endl;*/
+                    if (Evaluation != inputs_values[get<2>(connections[index])]) {
                         ALLtimings.emplace_back(current_time + GatesUsed[i].getDelay(), get<2>(connections[index]), Evaluation);
                         inputs_values[get<2>(connections[index])] = Evaluation;
                     }
                 }
             }
-
-
         }
         count++;
     }
 
-
-
+    // Sort output changes by timestamp in ascending order and write to output file
     sort(ALLtimings.begin(), ALLtimings.end(), sortascen);
-    for (const auto& record : ALLtimings)
+    for (const auto& record : ALLtimings) {
         ofs << get<0>(record) << " " << get<1>(record) << " " << get<2>(record) << endl;
+    }
     ofs.close();
 
-    exit(0);
     return 0;
-    //         
-
 }
