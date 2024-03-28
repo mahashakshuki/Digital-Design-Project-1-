@@ -2,8 +2,11 @@
 This C++ code simulates a digital circuit. It takes three files as input:
 
 1- Library file (.lib): Defines available gates (NOT, AND, OR, etc.) and their properties.
+
 2- Circuit file (.cir): Describes the circuit structure (gates, connections, outputs).
+
 3- Stimuli file (.stim): Specifies logic level changes applied to circuit inputs at specific times.
+
 4- The code outputs a simulation file (.sim) that details the circuit's behavior based on the provided inputs and gate delays.
 
 To use the application:
