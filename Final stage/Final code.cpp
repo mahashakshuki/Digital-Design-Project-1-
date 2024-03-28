@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <vector>
 #include <string>
@@ -6,7 +5,7 @@
 #include <sstream>
 #include <tuple>
 #include <unordered_map> 
-
+#include <algorithm>
 using namespace std;
 // C++ program for the above approach 
 
@@ -60,7 +59,7 @@ class NOTGate : public MultiInputGate {
 
 public:
     // Constructor to initialize input
-    NOTGate() : MultiInputGate(1){}
+    NOTGate() : MultiInputGate(1) {}
 
     // Function to set input
     void setInput(int value) {
@@ -108,7 +107,7 @@ public:
         if (inputs.empty()) {
             return 0;
         }
-       
+
         for (int input : inputs) {
             if (input == 1) {
                 return 1;
@@ -130,9 +129,10 @@ public:
         if (inputs.empty()) {
             return 0;
         }
-        
-        int countOnes = count(inputs.begin(), inputs.end(), 1);
-       
+
+        int countOnes = 0;
+        for (int input : inputs)
+            countOnes += input;
         return countOnes % 2 == 1 ? 1 : 0;
     }
 };
@@ -302,6 +302,12 @@ vector<tuple<int, string, int>> parseStimuli(const string& stimuliFile) {
     return stimuli;
 }
 
+bool sortascen(const tuple<int, string, int>& a,
+    const tuple<int, string, int>& b)
+{
+    return (get<0>(a) < get<0>(b));
+}
+
 
 int main() {
     string libraryFile = "library.lib";
@@ -317,7 +323,7 @@ int main() {
     // }
 
     // Parse the library file to create gate objects
-    vector<tuple<string, int,int>>  Library_Gates = parseLibrary(libraryFile);
+    vector<tuple<string, int, int>>  Library_Gates = parseLibrary(libraryFile);
     // Parse the circuit file and determine gate connections
 
 
@@ -338,7 +344,7 @@ int main() {
                 if (get<0>(Library_Gates[i]) == get<1>(connections[j]))
                 {
                     gatePtr = nullptr;
-                    int index_numOfInputs; 
+                    int index_numOfInputs;
                     string GateType;
 
                     int numOfInputs;
@@ -383,7 +389,7 @@ int main() {
                         cout << "Invalid Number of Inputs for " << get<0>(Library_Gates[i]) << " " << get<2>(Library_Gates[i]) << endl;
                         exit(0);
                     }
-                   
+
                     // cout<< get<1>(Library_Gates[i])<< " " << get<0>(Library_Gates[i]) << " " << gatePtr <<endl;
                     GatesUsed.emplace_back(get<1>(connections[j]), get<1>(Library_Gates[i]), gatePtr);
                     break;
@@ -400,60 +406,84 @@ int main() {
     // Evaluate gate outputs for initial time step
     ofstream ofs;
     ofs.open(outputFile.c_str(), ofstream::out);
+    vector<tuple<int, string, int>> ALLtimings;
+    int count = 0;
+
+    // do
+    // {
+    //     if(!ALLtimings.empty())
+    //     {
+    //         current_time = get<0>(ALLtimings[count]);
+    //         count++;
+    //     }
+
 
     for (int i = 0; i < GatesUsed.size(); i++)
     {
         int index = i + connections.size() - GatesUsed.size();
         int Evaluation = GatesUsed[i].gatePtr->evaluate();
+        // cout<< index << " " <<Evaluation << " " << get<2>(connections[index]) << " " << GatesUsed[i].getName()<<endl;
         if (Evaluation != inputs_values[get<2>(connections[index])])
         {
-            ofs << current_time+ GatesUsed[i].getDelay() << ',' << " " << get<2>(connections[index]) << ',' << " " << Evaluation << endl;
+           /* ofs << current_time + GatesUsed[i].getDelay() << ',' << " " << get<2>(connections[index]) << ',' << " " << Evaluation << endl;*/
+            ALLtimings.emplace_back(current_time + GatesUsed[i].getDelay(), get<2>(connections[index]), Evaluation);
             inputs_values[get<2>(connections[index])] = Evaluation;
-            current_time = current_time + GatesUsed[i].getDelay();
 
         }
     }
+    // for (const auto& record : ALLtimings)
+    // cout << get<0>(record) << " " <<  get<1>(record) << " " <<  get<2>(record) <<endl;
+    // }while(count< ALLtimings.size());
 
     // // Parse the stimuli file and store stimuli data
     vector<tuple<int, string, int>> stimuli = parseStimuli(stimuliFile);
-    // // Redirect output stream to the output file
-    // streambuf *coutbuf = cout.rdbuf();
-    // // cout.rdbuf(outputFileStream.rdbuf());
     for (const auto& stim : stimuli)
     {
+        if (!(inputs_values[(get<1>(stim))] == get<2>(stim)))
+            ALLtimings.emplace_back(get<0>(stim), get<1>(stim), get<2>(stim));
 
-        if (!(inputs_values[get<1>(stim)] == get<2>(stim)))
+    }
+
+
+    while (count < ALLtimings.size())
+    {
+        current_time = get<0>(ALLtimings[count]);
+
+        //ofs << get<0>(ALLtimings[count]) << ',' << " " << get<1>(ALLtimings[count]) << ',' << " " << get<2>(ALLtimings[count]) << endl;
+        inputs_values[get<1>(ALLtimings[count])] = get<2>(ALLtimings[count]);
+        for (int i = 0; i < GatesUsed.size(); i++)
         {
-            ofs << get<0>(stim) << ',' << " " << get<1>(stim) << ',' << " " << get<2>(stim) << endl;
-            inputs_values[get<1>(stim)] = get<2>(stim);
-            current_time = get<0>(stim);
-            for (int i = 0; i < GatesUsed.size(); i++)
-            {
-                int index = i + connections.size() - GatesUsed.size();
-                for (int z = 0; z < get<3>(connections[index]).size();z++) {
-                    if ((get<3>(connections[index])[z] == get<1>(stim)))
-                    {
-                        GatesUsed[i].gatePtr->setInput(z, get<2>(stim));
-                        //cout << get<3>(connections[index])[z] << " " << GatesUsed[i].gatePtr->inputs[z] << endl;
-                        int Evaluation = GatesUsed[i].gatePtr->evaluate();
-                        //cout << get<2>(connections[index]) << " " << Evaluation << endl;
+            int index = i + connections.size() - GatesUsed.size();
+            for (int z = 0; z < get<3>(connections[index]).size(); z++) {
+                if ((get<3>(connections[index])[z] == get<1>(ALLtimings[count])))
+                {
+                    GatesUsed[i].gatePtr->setInput(z, get<2>(ALLtimings[count]));
+                    //cout << get<3>(connections[index])[z] << " " << GatesUsed[i].gatePtr->inputs[z] << endl;
+                    int Evaluation = GatesUsed[i].gatePtr->evaluate();
+                    //cout << get<2>(connections[index]) << " " << Evaluation << endl;
 
-                        if (Evaluation != inputs_values[get<2>(connections[index])])
-                        {
-                            
-                            ofs << current_time + GatesUsed[i].getDelay() << ',' << " " << get<2>(connections[index]) << ',' << " " << Evaluation << endl;
-                            inputs_values[get<2>(connections[index])] = Evaluation;
-                            current_time = current_time + GatesUsed[i].getDelay();
-                        }
+                    if (Evaluation != inputs_values[get<2>(connections[index])])
+                    {
+
+                       /* ofs << current_time + GatesUsed[i].getDelay() << ',' << " " << get<2>(connections[index]) << ',' << " " << Evaluation << endl;*/
+                        ALLtimings.emplace_back(current_time + GatesUsed[i].getDelay(), get<2>(connections[index]), Evaluation);
+                        inputs_values[get<2>(connections[index])] = Evaluation;
                     }
                 }
-
-
             }
+
+
         }
+        count++;
     }
+
+
+
+    sort(ALLtimings.begin(), ALLtimings.end(), sortascen);
+    for (const auto& record : ALLtimings)
+        ofs << get<0>(record) << " " << get<1>(record) << " " << get<2>(record) << endl;
     ofs.close();
-    
+
     exit(0);
     return 0;
     //         
