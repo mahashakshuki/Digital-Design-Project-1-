@@ -1,0 +1,27 @@
+name: C++ Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Set up C++ build environment
+      uses: actions/setup-cpp@v2
+      with:
+        compiler: 'gcc'
+
+    - name: Build and run tests
+      run: |
+        g++ -o simulation main.cpp
+        ./simulation
